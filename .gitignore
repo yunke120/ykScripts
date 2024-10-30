@@ -2,3 +2,6 @@
 *.doc
 *.docx
 Untitled.ipynb
+*.xls
+*.xlsx
+*.pdf

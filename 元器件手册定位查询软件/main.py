@@ -7,7 +7,11 @@ from openpyxl import Workbook
 from openpyxl.styles import PatternFill
 import webbrowser
 
+column_spec_index = 0
+
 def extract_table_column(doc_path, column_name):
+    """从Word文档中提取指定列的数据"""
+    global column_spec_index
     doc = Document(doc_path)
     results = []
     for table in doc.tables:
@@ -16,6 +20,7 @@ def extract_table_column(doc_path, column_name):
         for i, cell in enumerate(header_row.cells):
             if cell.text.strip().lower() == column_name.lower():
                 column_index = i
+                column_spec_index = i  
                 break
         if column_index is not None:
             for row in table.rows[1:]:
@@ -25,6 +30,7 @@ def extract_table_column(doc_path, column_name):
     return results
 
 def find_documents(folder_path):
+    """查找指定文件夹中的文档"""
     document_files = []
     allowed_extensions = ('.pdf', '.doc', '.docx')
     for root, dirs, files in os.walk(folder_path):
@@ -36,9 +42,11 @@ def find_documents(folder_path):
     return document_files
 
 def fuzzy_match(spec, file_name, fuzzy_level):
+    """模糊匹配函数"""
     return spec[:-fuzzy_level].lower() in file_name.lower()
 
 def smart_match(spec, file_name):
+    """智能匹配函数"""
     if spec.lower() in file_name.lower():
         return 0  # 精确匹配
     for level in range(1, 4):
@@ -46,7 +54,8 @@ def smart_match(spec, file_name):
             return level  # 返回模糊匹配的级别
     return -1  # 未匹配
 
-def write_to_excel_and_copy_files(documents, specifications, output_file, exists_folder, not_exist_file, search_mode, fuzzy_level=1):
+def write_to_excel_and_copy_files(documents, specifications, output_file, exists_folder, not_exist_file, search_mode, fuzzy_level=1, word_doc=None):
+    """将匹配结果写入Excel并复制文件"""
     wb = Workbook()
     ws = wb.active
     ws.title = "Documents"
@@ -57,7 +66,7 @@ def write_to_excel_and_copy_files(documents, specifications, output_file, exists
     # 创建not_exist.xlsx
     not_exist_wb = Workbook()
     not_exist_ws = not_exist_wb.active
-    not_exist_ws.append(["序号", "型号规格"])
+    not_exist_ws.append(["序号", "型号规格", "生产单位"])
 
     # 定义填充颜色
     fill_colors = {
@@ -79,6 +88,7 @@ def write_to_excel_and_copy_files(documents, specifications, output_file, exists
         row = [idx, file_name, full_path, "", ""]
         ws.append(row)
 
+    # 处理匹配逻辑
     if search_mode == "smart":
         # 智能匹配逻辑
         for match_level in range(4):  # 0: 精确匹配, 1-3: 模糊匹配级别
@@ -179,7 +189,17 @@ def write_to_excel_and_copy_files(documents, specifications, output_file, exists
     # 写入未找到的型号规格到not_exist.xlsx，并创建空文件夹
     not_found_specs = set(specifications) - found_specs
     for idx, spec in enumerate(not_found_specs, start=1):
-        not_exist_ws.append([idx, spec])
+        # 查询spec对应的生产单位
+        production_unit = None
+        for table in word_doc.tables:  # 使用传递的word_doc对象
+            for row in table.rows:
+                if row.cells[column_spec_index].text.strip() == spec:  # 假设第一列是型号规格
+                    production_unit = row.cells[column_spec_index+1].text.strip()  # 假设第二列是生产单位
+                    break
+            if production_unit:
+                break
+
+        not_exist_ws.append([idx, spec, production_unit])
         safe_spec = spec.replace('/', '-')
         safe_spec = "".join([c for c in safe_spec if c.isalnum() or c in (' ', '-', '_')])
         folder_name = f"{folder_counter:03d}-{safe_spec}（空）"
@@ -196,7 +216,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.title("元器件手册定位查询软件 V1.0")
+        self.title("元器件手册定位查询软件 V1.1")
         self.geometry("600x500")
 
         self.word_path = tk.StringVar()
@@ -246,9 +266,7 @@ class App(tk.Tk):
 
         ttk.Button(self, text="帮助", command=self.open_help).grid(row=5, column=0, padx=5, pady=5)
         # 输出按钮
-        # _style = ttk.Style()
-        # _style.configure('TButton', foreground="black", background="green") #  style='TButton', 
-        ttk.Button(self, text="输出",command=self.process_documents).grid(row=5, column=2, padx=5, pady=5)
+        ttk.Button(self, text="输出", command=self.process_documents).grid(row=5, column=2, padx=5, pady=5)
 
         # 日志显示
         self.log_text = tk.Text(self, height=15, width=70)
@@ -265,6 +283,7 @@ class App(tk.Tk):
             webbrowser.open('file://' + os.path.realpath(help_file))
         else:
             self.log("帮助文件不存在。请确保 'help.html' 文件在程序同一目录下。")
+
     def select_word_file(self):
         filename = filedialog.askopenfilename(filetypes=[("Word Document", "*.docx")])
         if filename:
@@ -289,7 +308,7 @@ class App(tk.Tk):
         word_doc_path = self.word_path.get()
         folder_path = self.folder_path.get()
         output_file = "元器件清单.xlsx"
-        not_exist_file = "not_exist.xlsx"
+        not_exist_file = "未查询到手册元器件.xlsx"
         exists_folder = self.exists_folder.get()
 
         if not word_doc_path or not folder_path or not exists_folder:
@@ -306,10 +325,14 @@ class App(tk.Tk):
         documents = find_documents(folder_path)
         self.log(f"在文件夹中找到 {len(documents)} 个文档")
 
+        # 打开Word文档以便后续查询生产单位
+        word_doc = Document(word_doc_path)
+
         # 写入Excel，检查型号规格，并复制匹配的文件
         found_specs, not_found_specs = write_to_excel_and_copy_files(
             documents, specifications, output_file, exists_folder, not_exist_file, 
-            search_mode=self.search_mode.get(), fuzzy_level=self.fuzzy_level.get()
+            search_mode=self.search_mode.get(), fuzzy_level=self.fuzzy_level.get(),
+            word_doc=word_doc  # 传递Word文档对象
         )
 
         self.log(f"\n文档信息已写入 {output_file}")
