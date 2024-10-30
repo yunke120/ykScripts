@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>元器件清单处理软件使用说明</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0 auto;
+            max-width: 800px;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .step {
+            margin-bottom: 20px;
+        }
+        .note {
+            background-color: #f0f0f0;
+            border-left: 5px solid #333;
+            padding: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>元器件手册定位查询软件使用说明</h1>
+
+    <div class="step">
+        <h2>1. 选择Word文档</h2>
+        <p>点击"Word文档"右侧的"浏览"按钮，选择包含元器件型号规格的Word文档（.docx格式）。</p>
+        <div class="note">注意：确保Word文档中包含一个标题为"型号规格"的列。</div>
+    </div>
+
+    <div class="step">
+        <h2>2. 选择元器件手册文件夹</h2>
+        <p>点击"元器件手册"右侧的"浏览"按钮，选择包含元器件手册文件的文件夹。</p>
+        <div class="note">注意：软件将搜索该文件夹及其子文件夹中的所有.pdf、.doc和.docx文件。</div>
+    </div>
+
+    <div class="step">
+        <h2>3. 选择保存文件夹</h2>
+        <p>点击"保存文件夹"右侧的"浏览"按钮，选择用于保存匹配文件的文件夹。</p>
+    </div>
+
+    <div class="step">
+        <h2>4. 选择查询模式</h2>
+        <p>选择以下三种查询模式之一：</p>
+        <ul>
+            <li><strong>精确查询</strong>：只匹配完全相同的型号规格。</li>
+            <li><strong>模糊查询</strong>：根据选择的模糊等级进行匹配。</li>
+            <li><strong>智能查询</strong>：先进行精确匹配，然后逐级进行模糊匹配。</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>5. 选择模糊查询等级（仅限模糊查询模式）</h2>
+        <p>如果选择了模糊查询模式，请选择模糊查询的等级：</p>
+        <ul>
+            <li><strong>一级</strong>：匹配除最后一个字符外的所有字符。</li>
+            <li><strong>二级</strong>：匹配除最后两个字符外的所有字符。</li>
+            <li><strong>三级</strong>：匹配除最后三个字符外的所有字符。</li>
+        </ul>
+        <div class="note">注意：只有在选择模糊查询模式时，模糊查询等级选项才会启用。</div>
+    </div>
+
+    <div class="step">
+        <h2>6. 开始处理</h2>
+        <p>点击"输出"按钮开始处理文档。处理过程和结果将显示在下方的日志窗口中。</p>
+    </div>
+
+    <div class="step">
+        <h2>7. 查看结果</h2>
+        <p>处理完成后，您可以在以下位置找到结果：</p>
+        <ul>
+            <li><strong>元器件清单.xlsx</strong>：包含所有找到的文档信息，位于程序运行的当前目录。</li>
+            <li><strong>not_exist.xlsx</strong>：包含未在文件名中找到的型号规格，位于程序运行的当前目录。</li>
+            <li><strong>匹配的文件</strong>：已复制到您选择的保存文件夹中。</li>
+        </ul>
+    </div>
+
+    <div class="note">
+        <p><strong>注意事项：</strong></p>
+        <ul>
+            <li>确保您的系统中已安装了所需的库：python-docx和openpyxl。</li>
+            <li>处理大量文件可能需要一些时间，请耐心等待。</li>
+            <li>如果遇到任何问题，请查看日志窗口中的错误信息。</li>
+        </ul>
+    </div>
+</body>
+</html>
